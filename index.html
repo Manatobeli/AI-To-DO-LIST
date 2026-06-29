@@ -460,25 +460,47 @@
     generateWeek(1);
   }
 
-  // ---------- Grok calls (via Netlify Function, keeps the API key server-side) ----------
-  async function callGrok(systemPrompt, userPrompt){
-    const response = await fetch("/.netlify/functions/generate-plan", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ system: systemPrompt, user: userPrompt })
-    });
-    const data = await response.json().catch(()=>({}));
-    if(!response.ok){
-      throw new Error(data.error || ('Request failed with status ' + response.status));
-    }
-    try {
-      return JSON.parse(raw);
-    } catch (err) {
-      console.error("INVALID JSON:");
-      console.error(raw);
-      throw err;
-    }
+async function callGrok(systemPrompt, userPrompt){
+  const response = await fetch("/.netlify/functions/generate-plan", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      system: systemPrompt,
+      user: userPrompt
+    })
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(
+      data.error || `Request failed with status ${response.status}`
+    );
   }
+
+  if (!data.content) {
+    throw new Error("No content returned from server.");
+  }
+
+  let raw = data.content.trim();
+
+  // remove markdown fences if model returned them
+  raw = raw
+    .replace(/^```json\s*/i, "")
+    .replace(/^```\s*/i, "")
+    .replace(/```\s*$/i, "")
+    .trim();
+
+  try {
+    return JSON.parse(raw);
+  } catch (err) {
+    console.error("INVALID JSON RECEIVED:");
+    console.error(raw);
+    throw new Error("AI returned invalid JSON.");
+  }
+}
 
   function buildPrompt(weekNumber){
     const startDay = (weekNumber-1)*7 + 1;
