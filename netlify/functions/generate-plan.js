@@ -45,6 +45,7 @@ exports.handler = async function (event) {
 
     if (!xaiResponse.ok) {
       const errText = await xaiResponse.text();
+      console.error('xAI API error', xaiResponse.status, errText);
       return jsonResponse(xaiResponse.status, { error: `xAI API error (${xaiResponse.status}): ${errText.slice(0, 500)}` });
     }
 
@@ -56,6 +57,7 @@ exports.handler = async function (event) {
 
     return jsonResponse(200, { content });
   } catch (err) {
+    console.error('generate-plan function error', err);
     return jsonResponse(500, { error: err.message || 'Unknown server error' });
   }
 };
