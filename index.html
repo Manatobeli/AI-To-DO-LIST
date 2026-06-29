@@ -471,9 +471,13 @@
     if(!response.ok){
       throw new Error(data.error || ('Request failed with status ' + response.status));
     }
-    let raw = (data.content || '').trim();
-    raw = raw.replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
-    return JSON.parse(raw);
+    try {
+      return JSON.parse(raw);
+    } catch (err) {
+      console.error("INVALID JSON:");
+      console.error(raw);
+      throw err;
+    }
   }
 
   function buildPrompt(weekNumber){
