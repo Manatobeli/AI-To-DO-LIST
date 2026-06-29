@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Route — AI Goal Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#ECEFE3;
+    --card:#FBFAF5;
+    --ink:#1F3A2E;
+    --ink-soft:#56654F;
+    --line:#C9D1BC;
+    --amber:#C2722B;
+    --amber-deep:#A35E20;
+    --sky:#3E6E8E;
+    --shadow: rgba(31,58,46,0.08);
+    --font-display:'Fraunces', serif;
+    --font-body:'Inter', sans-serif;
+    --font-mono:'IBM Plex Mono', monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--font-body);
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--sky);}
+  button{font:inherit;}
+  :focus-visible{outline:2px solid var(--sky); outline-offset:2px; border-radius:4px;}
+
+  .app{max-width:880px;margin:0 auto;padding:56px 24px 100px;}
+
+  /* ---------- Hero ---------- */
+  .hero{margin-bottom:36px;}
+  .eyebrow{
+    font-family:var(--font-mono);
+    text-transform:uppercase;
+    letter-spacing:.12em;
+    font-size:12px;
+    color:var(--amber-deep);
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:16px;
+  }
+  .eyebrow svg{width:14px;height:14px;flex:none;}
+  h1{
+    font-family:var(--font-display);
+    font-size:clamp(34px,5.6vw,52px);
+    font-weight:600;
+    line-height:1.05;
+    margin:0 0 14px;
+    letter-spacing:-0.01em;
+  }
+  .hero p{
+    color:var(--ink-soft);
+    font-size:16.5px;
+    line-height:1.55;
+    max-width:520px;
+    margin:0;
+  }
+
+  /* ---------- Input panel ---------- */
+  .panel{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:28px;
+    box-shadow:0 1px 0 var(--shadow);
+    margin-bottom:40px;
+  }
+  .panel label{
+    font-family:var(--font-mono);
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--ink-soft);
+    display:block;
+    margin-bottom:10px;
+  }
+  textarea{
+    width:100%;
+    font-family:var(--font-body);
+    font-size:16px;
+    color:var(--ink);
+    background:transparent;
+    border:none;
+    border-bottom:1.5px solid var(--line);
+    padding:4px 2px 12px;
+    resize:none;
+    outline:none;
+    transition:border-color .2s;
+    line-height:1.4;
+  }
+  textarea:focus{border-color:var(--amber);}
+  textarea::placeholder{color:#9aa593;}
+
+  .examples{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;}
+  .chip{
+    font-family:var(--font-mono);
+    font-size:12px;
+    padding:6px 13px;
+    border:1px solid var(--line);
+    border-radius:100px;
+    background:transparent;
+    color:var(--ink-soft);
+    cursor:pointer;
+    transition:border-color .15s, color .15s;
+  }
+  .chip:hover{border-color:var(--amber); color:var(--amber-deep);}
+
+  .row{display:flex;gap:28px;margin-top:24px;flex-wrap:wrap;}
+  .field{flex:1;min-width:190px;}
+  .segmented{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;}
+  .segmented button{
+    flex:1;
+    border:none;
+    background:transparent;
+    padding:9px 6px;
+    font-size:13px;
+    color:var(--ink-soft);
+    cursor:pointer;
+    border-right:1px solid var(--line);
+    transition:background .15s, color .15s;
+  }
+  .segmented button:last-child{border-right:none;}
+  .segmented button.active{background:var(--ink); color:var(--card);}
+
+  .btn-primary{
+    font-weight:600;
+    font-size:15px;
+    color:#fff;
+    background:var(--amber);
+    border:none;
+    border-radius:10px;
+    padding:13px 26px;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    transition:transform .15s, box-shadow .15s, opacity .15s;
+    margin-top:26px;
+  }
+  .btn-primary:hover:not(:disabled){transform:translateY(-1px); box-shadow:0 6px 16px rgba(194,114,43,.32);}
+  .btn-primary:disabled{opacity:.55; cursor:not-allowed; transform:none; box-shadow:none;}
+  .btn-secondary{
+    font-size:13.5px;
+    color:var(--ink);
+    background:transparent;
+    border:1px solid var(--line);
+    border-radius:9px;
+    padding:8px 16px;
+    cursor:pointer;
+  }
+  .btn-secondary:hover{border-color:var(--ink-soft);}
+
+  .error-box{
+    margin-top:18px;
+    padding:13px 16px;
+    background:#FBEFE7;
+    border:1px solid #E3B998;
+    border-radius:10px;
+    color:#8A4A1F;
+    font-size:13.5px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+  }
+  .error-box button{
+    flex:none;
+    background:#fff;
+    border:1px solid #E3B998;
+    color:#8A4A1F;
+    border-radius:7px;
+    padding:6px 12px;
+    cursor:pointer;
+    font-size:12.5px;
+  }
+
+  /* collapsed summary state */
+  .panel.collapsed .full{display:none;}
+  .summary-row{display:none; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;}
+  .panel.collapsed .summary-row{display:flex;}
+  .summary-row .goal-text{font-size:15px; color:var(--ink);}
+  .summary-row .goal-text b{font-weight:600;}
+  .summary-row .meta{font-family:var(--font-mono); font-size:11.5px; color:var(--ink-soft);}
+
+  /* ---------- Status / progress ---------- */
+  .status-bar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:18px;
+    flex-wrap:wrap;
+    margin-bottom:30px;
+  }
+  .status-bar .label{font-size:13.5px; color:var(--ink-soft);}
+  .progress-wrap{flex:1; min-width:170px; max-width:280px;}
+  .progress-track{height:6px; background:var(--line); border-radius:100px; overflow:hidden;}
+  .progress-fill{height:100%; width:0%; background:var(--amber); border-radius:100px; transition:width .4s ease;}
+  .progress-text{font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); margin-top:6px;}
+
+  /* ---------- Week / trail ---------- */
+  .week-block{position:relative; margin-bottom:46px;}
+  .week-head{padding-left:62px; margin-bottom:18px;}
+  .week-label{
+    font-family:var(--font-mono);
+    font-size:11.5px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--amber-deep);
+    margin-bottom:6px;
+  }
+  .week-focus{font-family:var(--font-display); font-size:19px; font-weight:500; margin:0; color:var(--ink);}
+
+  .trail-svg{position:absolute; left:0; top:46px; width:62px; pointer-events:none; overflow:visible;}
+  .trail-svg path{
+    fill:none;
+    stroke:var(--line);
+    stroke-width:2;
+    stroke-linecap:round;
+    stroke-dasharray:1 7;
+  }
+  .trail-svg path.final{stroke:var(--amber); stroke-dasharray:1 6;}
+
+  .days-list{display:flex; flex-direction:column; gap:16px;}
+  .day-row{position:relative; padding-left:62px;}
+  .day-marker{
+    position:absolute;
+    top:2px;
+    width:30px;
+    height:30px;
+    border-radius:50%;
+    background:var(--card);
+    border:2px solid var(--amber);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:var(--font-mono);
+    font-weight:600;
+    font-size:12px;
+    color:var(--ink);
+    z-index:2;
+  }
+  .day-marker.flag{font-size:14px;}
+  .day-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:15px 18px 13px;
+  }
+  .day-title{font-weight:600; font-size:14.5px; margin:0 0 10px; color:var(--ink);}
+  .task{
+    display:flex;
+    align-items:flex-start;
+    gap:9px;
+    font-size:13.8px;
+    color:var(--ink-soft);
+    padding:4px 0;
+    cursor:pointer;
+    line-height:1.4;
+  }
+  .task input[type="checkbox"]{margin-top:3px; accent-color:var(--amber); cursor:pointer; flex:none;}
+  .task.done span{text-decoration:line-through; color:#b9c2ac;}
+
+  .next-week-wrap{text-align:center; margin-top:6px;}
+
+  .complete-banner{
+    text-align:center;
+    padding:34px 20px;
+    border:1px dashed var(--line);
+    border-radius:16px;
+  }
+  .complete-banner .flagbig{font-size:30px; display:block; margin-bottom:10px;}
+  .complete-banner h3{font-family:var(--font-display); font-size:22px; margin:0 0 8px; color:var(--ink);}
+  .complete-banner p{color:var(--ink-soft); font-size:14px; margin:0 0 18px;}
+
+  /* loading skeleton */
+  .skeleton-week{padding-left:62px;}
+  .skeleton-card{
+    height:62px;
+    border-radius:14px;
+    background:linear-gradient(90deg, var(--card) 25%, #F1EFE5 37%, var(--card) 63%);
+    background-size:400% 100%;
+    animation:shimmer 1.4s ease infinite;
+    margin-bottom:16px;
+  }
+  @keyframes shimmer{0%{background-position:100% 0;}100%{background-position:0 0;}}
+
+  footer{margin-top:60px; font-family:var(--font-mono); font-size:11.5px; color:var(--ink-soft); text-align:center;}
+
+  @media (max-width:560px){
+    .row{flex-direction:column;}
+    .week-head, .day-row{padding-left:50px;}
+    .day-marker{width:26px; height:26px; font-size:11px;}
+    .trail-svg{width:50px;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none !important; animation:none !important;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="hero">
+    <div class="eyebrow">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+      GOAL → ROUTE
+    </div>
+    <h1>Plan the climb,<br>not just the summit.</h1>
+    <p>Tell us what you're working toward. We'll lay out the route one week at a time — paced to how far you're going, and how hard you want to push.</p>
+  </div>
+
+  <div class="panel" id="panel">
+    <div class="full">
+      <label for="goalInput">Your goal</label>
+      <textarea id="goalInput" rows="2" placeholder="e.g. Learn JavaScript well enough to build a small app"></textarea>
+      <div class="examples" id="examples">
+        <button class="chip" type="button" data-goal="Learn JavaScript well enough to build a small app">Learn JavaScript</button>
+        <button class="chip" type="button" data-goal="Lose 5kg sustainably">Lose 5kg sustainably</button>
+        <button class="chip" type="button" data-goal="Launch a side project and get my first user">Launch a side project</button>
+        <button class="chip" type="button" data-goal="Train to run a 5K">Train for a 5K</button>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label>Timeframe</label>
+          <div class="segmented" id="durationGroup">
+            <button type="button" data-val="1week">1 Week</button>
+            <button type="button" data-val="2weeks">2 Weeks</button>
+            <button type="button" data-val="1month" class="active">1 Month</button>
+            <button type="button" data-val="3months">3 Months</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Pace</label>
+          <div class="segmented" id="paceGroup">
+            <button type="button" data-val="relaxed">Relaxed</button>
+            <button type="button" data-val="balanced" class="active">Balanced</button>
+            <button type="button" data-val="intense">Intense</button>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="generateBtn" type="button">Generate plan →</button>
+      <div id="errorSlot"></div>
+    </div>
+
+    <div class="summary-row">
+      <div class="goal-text">Route for: <b id="summaryGoal"></b></div>
+      <div class="meta" id="summaryMeta"></div>
+      <button class="btn-secondary" id="editBtn" type="button">Edit goal</button>
+    </div>
+  </div>
+
+  <div id="output"></div>
+
+  <footer>Each week is generated fresh by Grok as you go — your route, written week by week.</footer>
+</div>
+
+<script>
+(function(){
+  const state = {
+    goal:'',
+    durationKey:'1month',
+    paceKey:'balanced',
+    totalWeeks:4,
+    weeks:[], // {weekFocus, days:[{day,title,tasks:[{text,done}]}]}
+    loading:false,
+  };
+
+  const DURATION_WEEKS = {'1week':1,'2weeks':2,'1month':4,'3months':12};
+  const DURATION_LABEL = {'1week':'1 week','2weeks':'2 weeks','1month':'1 month','3months':'3 months'};
+  const PACE_LABEL = {relaxed:'Relaxed', balanced:'Balanced', intense:'Intense'};
+  const PACE_TASKS = {relaxed:'1-2', balanced:'2-3', intense:'3-4'};
+
+  const els = {
+    panel: document.getElementById('panel'),
+    goalInput: document.getElementById('goalInput'),
+    examples: document.getElementById('examples'),
+    durationGroup: document.getElementById('durationGroup'),
+    paceGroup: document.getElementById('paceGroup'),
+    generateBtn: document.getElementById('generateBtn'),
+    errorSlot: document.getElementById('errorSlot'),
+    output: document.getElementById('output'),
+    summaryGoal: document.getElementById('summaryGoal'),
+    summaryMeta: document.getElementById('summaryMeta'),
+    editBtn: document.getElementById('editBtn'),
+  };
+
+  // ---------- input panel interactions ----------
+  els.examples.addEventListener('click', (e)=>{
+    const btn = e.target.closest('.chip');
+    if(!btn) return;
+    els.goalInput.value = btn.dataset.goal;
+    els.goalInput.focus();
+  });
+
+  function wireSegmented(group, onPick){
+    group.addEventListener('click', (e)=>{
+      const btn = e.target.closest('button');
+      if(!btn) return;
+      [...group.children].forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      onPick(btn.dataset.val);
+    });
+  }
+  wireSegmented(els.durationGroup, (val)=>{ state.durationKey = val; });
+  wireSegmented(els.paceGroup, (val)=>{ state.paceKey = val; });
+
+  els.editBtn.addEventListener('click', ()=>{
+    els.panel.classList.remove('collapsed');
+  });
+
+  els.generateBtn.addEventListener('click', startPlan);
+
+  function showError(message, retryFn){
+    els.errorSlot.innerHTML = '';
+    const box = document.createElement('div');
+    box.className = 'error-box';
+    const span = document.createElement('span');
+    span.textContent = message;
+    box.appendChild(span);
+    if(retryFn){
+      const btn = document.createElement('button');
+      btn.textContent = 'Retry';
+      btn.type = 'button';
+      btn.addEventListener('click', ()=>{ els.errorSlot.innerHTML=''; retryFn(); });
+      box.appendChild(btn);
+    }
+    els.errorSlot.appendChild(box);
+  }
+  function clearError(){ els.errorSlot.innerHTML = ''; }
+
+  function startPlan(){
+    const goal = els.goalInput.value.trim();
+    if(!goal){
+      showError("Type a goal first — that's what the route is built from.");
+      return;
+    }
+    clearError();
+    state.goal = goal;
+    state.totalWeeks = DURATION_WEEKS[state.durationKey];
+    state.weeks = [];
+    els.output.innerHTML = '';
+
+    els.panel.classList.add('collapsed');
+    els.summaryGoal.textContent = state.goal;
+    els.summaryMeta.textContent = `${DURATION_LABEL[state.durationKey]} · ${PACE_LABEL[state.paceKey]} pace`;
+
+    generateWeek(1);
+  }
+
+  // ---------- Grok calls (via Netlify Function, keeps the API key server-side) ----------
+  async function callGrok(systemPrompt, userPrompt){
+    const response = await fetch("/api/generate-plan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ system: systemPrompt, user: userPrompt })
+    });
+    const data = await response.json().catch(()=>({}));
+    if(!response.ok){
+      throw new Error(data.error || ('Request failed with status ' + response.status));
+    }
+    let raw = (data.content || '').trim();
+    raw = raw.replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
+    return JSON.parse(raw);
+  }
+
+  function buildPrompt(weekNumber){
+    const startDay = (weekNumber-1)*7 + 1;
+    const endDay = weekNumber*7;
+    const prevFocus = weekNumber > 1 ? state.weeks[weekNumber-2].weekFocus : null;
+    const isFinal = weekNumber === state.totalWeeks;
+
+    const system = "You are a careful planning assistant. You turn a person's goal into a realistic day-by-day plan, paced to their chosen intensity and timeframe. Respond with ONLY raw JSON — no markdown code fences, no commentary, nothing before or after the JSON.";
+
+    const user = `Goal: "${state.goal}"
+Total timeframe: ${DURATION_LABEL[state.durationKey]} (${state.totalWeeks} week${state.totalWeeks>1?'s':''} total)
+Pace: ${PACE_LABEL[state.paceKey]}
+This is week ${weekNumber} of ${state.totalWeeks}.
+${prevFocus ? `Last week's focus was: "${prevFocus}". Build on that — don't repeat what's already been covered.` : `This is the first week, so start with fundamentals and orientation.`}
+${isFinal ? 'This is the FINAL week — pace it so the goal feels genuinely achieved by the last day.' : ''}
+
+Create a plan for days ${startDay}-${endDay} (7 days). For each day give:
+- a short, specific title (4-7 words, no day number in it)
+- ${PACE_TASKS[state.paceKey]} concrete, actionable tasks (each one short sentence, no fluff)
+
+Respond with ONLY this exact JSON shape, nothing else:
+{"weekFocus":"one sentence describing this week's theme","days":[{"day":<number>,"title":"...","tasks":["...","..."]}]}
+(exactly 7 entries in "days", numbered ${startDay} through ${endDay})`;
+
+    return { system, user };
+  }
+
+  async function generateWeek(weekNumber){
+    state.loading = true;
+    clearError();
+    renderLoading();
+    try{
+      const { system, user } = buildPrompt(weekNumber);
+      const plan = await callGrok(system, user);
+      if(!plan || !Array.isArray(plan.days)) throw new Error('Malformed plan returned.');
+      const days = plan.days.map(d => ({
+        day: d.day,
+        title: d.title,
+        tasks: (d.tasks || []).map(t => ({ text: t, done: false }))
+      }));
+      state.weeks.push({ weekFocus: plan.weekFocus || '', days });
+    }catch(err){
+      state.loading = false;
+      renderAll();
+      showError("Couldn't generate this week's plan. Check your connection and try again.", ()=>generateWeek(weekNumber));
+      return;
+    }
+    state.loading = false;
+    renderAll();
+  }
+
+  // ---------- rendering ----------
+  function renderLoading(){
+    els.output.innerHTML = '';
+    renderCommittedWeeks();
+    const skel = document.createElement('div');
+    skel.className = 'skeleton-week';
+    for(let i=0;i<3;i++){
+      const c = document.createElement('div');
+      c.className = 'skeleton-card';
+      skel.appendChild(c);
+    }
+    els.output.appendChild(skel);
+  }
+
+  function renderAll(){
+    els.output.innerHTML = '';
+    renderCommittedWeeks();
+    renderProgress();
+    renderNextAction();
+    drawAllTrails();
+  }
+
+  function renderProgress(){
+    if(state.weeks.length === 0) return;
+    let total = 0, done = 0;
+    state.weeks.forEach(w => w.days.forEach(d => d.tasks.forEach(t => { total++; if(t.done) done++; })));
+    const bar = document.createElement('div');
+    bar.className = 'status-bar';
+    bar.innerHTML = `
+      <div class="label">Week ${state.weeks.length} of ${state.totalWeeks}</div>
+      <div class="progress-wrap">
+        <div class="progress-track"><div class="progress-fill" style="width:${total?Math.round(done/total*100):0}%"></div></div>
+        <div class="progress-text">${done} / ${total} TASKS DONE</div>
+      </div>
+    `;
+    els.output.insertBefore(bar, els.output.firstChild);
+  }
+
+  function renderCommittedWeeks(){
+    state.weeks.forEach((week, wIndex) => {
+      const block = document.createElement('div');
+      block.className = 'week-block';
+      block.dataset.weekIndex = wIndex;
+
+      const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+      svg.classList.add('trail-svg');
+      const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+      if(wIndex === state.weeks.length-1 && wIndex === state.totalWeeks-1) path.classList.add('final');
+      svg.appendChild(path);
+      block.appendChild(svg);
+
+      const head = document.createElement('div');
+      head.className = 'week-head';
+      head.innerHTML = `<div class="week-label">WEEK ${wIndex+1} OF ${state.totalWeeks}</div><p class="week-focus">${escapeHtml(week.weekFocus)}</p>`;
+      block.appendChild(head);
+
+      const list = document.createElement('div');
+      list.className = 'days-list';
+
+      week.days.forEach((day, dIndex) => {
+        const isVeryLast = wIndex === state.weeks.length-1 && dIndex === week.days.length-1 && wIndex === state.totalWeeks-1;
+        const row = document.createElement('div');
+        row.className = 'day-row';
+
+        const leftOffset = 16 + 8*Math.sin(dIndex*0.9);
+        const marker = document.createElement('div');
+        marker.className = 'day-marker' + (isVeryLast ? ' flag' : '');
+        marker.style.left = leftOffset + 'px';
+        marker.textContent = isVeryLast ? '🏁' : day.day;
+        row.appendChild(marker);
+
+        const card = document.createElement('div');
+        card.className = 'day-card';
+        const title = document.createElement('p');
+        title.className = 'day-title';
+        title.textContent = `Day ${day.day} — ${day.title}`;
+        card.appendChild(title);
+
+        day.tasks.forEach((task, tIndex) => {
+          const label = document.createElement('label');
+          label.className = 'task' + (task.done ? ' done' : '');
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.checked = task.done;
+          cb.addEventListener('change', ()=>{
+            task.done = cb.checked;
+            label.classList.toggle('done', task.done);
+            renderProgress();
+            updateProgressOnly();
+          });
+          const span = document.createElement('span');
+          span.textContent = task.text;
+          label.appendChild(cb);
+          label.appendChild(span);
+          card.appendChild(label);
+        });
+
+        row.appendChild(card);
+        list.appendChild(row);
+      });
+
+      block.appendChild(list);
+      els.output.appendChild(block);
+    });
+  }
+
+  function updateProgressOnly(){
+    let total = 0, done = 0;
+    state.weeks.forEach(w => w.days.forEach(d => d.tasks.forEach(t => { total++; if(t.done) done++; })));
+    const fill = els.output.querySelector('.progress-fill');
+    const text = els.output.querySelector('.progress-text');
+    if(fill) fill.style.width = (total?Math.round(done/total*100):0) + '%';
+    if(text) text.textContent = `${done} / ${total} TASKS DONE`;
+  }
+
+  function renderNextAction(){
+    if(state.loading) return;
+    if(state.weeks.length === 0) return;
+    if(state.weeks.length < state.totalWeeks){
+      const wrap = document.createElement('div');
+      wrap.className = 'next-week-wrap';
+      const btn = document.createElement('button');
+      btn.className = 'btn-primary';
+      btn.type = 'button';
+      btn.textContent = `Generate week ${state.weeks.length+1} →`;
+      btn.addEventListener('click', ()=>generateWeek(state.weeks.length+1));
+      wrap.appendChild(btn);
+      els.output.appendChild(wrap);
+    } else {
+      const banner = document.createElement('div');
+      banner.className = 'complete-banner';
+      banner.innerHTML = `
+        <span class="flagbig">🏁</span>
+        <h3>Route complete.</h3>
+        <p>That's the whole path, from day one to the goal.</p>
+      `;
+      const btn = document.createElement('button');
+      btn.className = 'btn-secondary';
+      btn.type = 'button';
+      btn.textContent = 'Start a new goal';
+      btn.addEventListener('click', ()=>{
+        state.weeks = [];
+        els.panel.classList.remove('collapsed');
+        els.goalInput.value = '';
+        els.goalInput.focus();
+        els.output.innerHTML = '';
+      });
+      banner.appendChild(btn);
+      els.output.appendChild(banner);
+    }
+  }
+
+  // ---------- trail path drawing ----------
+  function drawAllTrails(){
+    requestAnimationFrame(()=>{
+      document.querySelectorAll('.week-block').forEach(block=>{
+        try{ drawTrail(block); }catch(e){ /* decorative only — fail silently */ }
+      });
+    });
+  }
+
+  function drawTrail(block){
+    const svg = block.querySelector('.trail-svg');
+    const path = block.querySelector('path');
+    const markers = block.querySelectorAll('.day-marker');
+    if(!svg || markers.length === 0) return;
+
+    const blockRect = block.getBoundingClientRect();
+    const points = Array.from(markers).map(m=>{
+      const r = m.getBoundingClientRect();
+      return { x: r.left - blockRect.left + r.width/2, y: r.top - blockRect.top + r.height/2 };
+    });
+
+    const totalHeight = block.offsetHeight;
+    svg.setAttribute('viewBox', `0 0 62 ${totalHeight}`);
+    svg.style.height = totalHeight + 'px';
+
+    let d = `M ${points[0].x} ${points[0].y}`;
+    for(let i=1;i<points.length;i++){
+      const prev = points[i-1], cur = points[i];
+      const midY = (prev.y + cur.y) / 2;
+      d += ` C ${prev.x} ${midY}, ${cur.x} ${midY}, ${cur.x} ${cur.y}`;
+    }
+    path.setAttribute('d', d);
+  }
+
+  window.addEventListener('resize', ()=>{ drawAllTrails(); });
+
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str || '';
+    return div.innerHTML;
+  }
+})();
+</script>
+</body>
+</html>
