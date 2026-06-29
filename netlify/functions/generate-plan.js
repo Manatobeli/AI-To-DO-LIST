@@ -1,4 +1,4 @@
-exports.handler = async function (event) {
+exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return jsonResponse(405, { error: "Method not allowed" });
   }
@@ -7,9 +7,9 @@ exports.handler = async function (event) {
 
   try {
     payload = JSON.parse(event.body || "{}");
-  } catch (err) {
+  } catch {
     return jsonResponse(400, {
-      error: "Invalid JSON in request body",
+      error: "Invalid JSON body.",
     });
   }
 
@@ -17,7 +17,7 @@ exports.handler = async function (event) {
 
   if (!system || !user) {
     return jsonResponse(400, {
-      error: 'Missing "system" or "user" prompt',
+      error: 'Missing "system" or "user".',
     });
   }
 
@@ -25,22 +25,26 @@ exports.handler = async function (event) {
 
   if (!apiKey) {
     return jsonResponse(500, {
-      error:
-        "Missing GROQ_API_KEY environment variable in Netlify.",
+      error: "Missing GROQ_API_KEY environment variable.",
     });
   }
 
   try {
-    const groqRes = await fetch(
+    const response = await fetch(
       "https://api.groq.com/openai/v1/chat/completions",
       {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           model: "llama-3.3-70b-versatile",
+          temperature: 0.7,
+          max_tokens: 2048,
+          response_format: {
+            type: "json_object",
+          },
           messages: [
             {
               role: "system",
@@ -51,22 +55,18 @@ exports.handler = async function (event) {
               content: user,
             },
           ],
-          temperature: 0.7,
-          max_tokens: 2048,
         }),
       }
     );
 
-    const data = await groqRes.json();
+    const data = await response.json();
 
-    console.log("Groq Status:", groqRes.status);
-    console.log("Groq Response:", JSON.stringify(data, null, 2));
+    console.log("STATUS:", response.status);
+    console.log(JSON.stringify(data, null, 2));
 
-    if (!groqRes.ok) {
-      return jsonResponse(groqRes.status, {
-        error:
-          data.error?.message ||
-          "Groq API returned an error.",
+    if (!response.ok) {
+      return jsonResponse(response.status, {
+        error: data.error?.message || "Groq API Error",
       });
     }
 
@@ -74,7 +74,7 @@ exports.handler = async function (event) {
 
     if (!content) {
       return jsonResponse(502, {
-        error: "Groq returned no content.",
+        error: "No content returned from Groq.",
       });
     }
 
@@ -83,20 +83,20 @@ exports.handler = async function (event) {
     });
 
   } catch (err) {
-    console.error("Function Error:", err);
+    console.error(err);
 
     return jsonResponse(500, {
-      error: err.message || "Unknown server error",
+      error: err.message,
     });
   }
 };
 
-function jsonResponse(statusCode, bodyObj) {
+function jsonResponse(statusCode, body) {
   return {
     statusCode,
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(bodyObj),
+    body: JSON.stringify(body),
   };
 }
