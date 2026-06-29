@@ -20,36 +20,27 @@ exports.handler = async function (event) {
     return jsonResponse(400, { error: 'Missing "system" or "user" prompt' });
   }
 
-  const apiKey = process.env.XAI_API_KEY;
+  const apiKey = process.env.GROK_API_KEY;
   if (!apiKey) {
-    return jsonResponse(500, { error: 'Server is missing XAI_API_KEY. Set it in Netlify > Site configuration > Environment variables.' });
+    return jsonResponse(500, { error: 'Server is missing GROK_API_KEY. Set it in Netlify > Site configuration > Environment variables.' });
   }
 
   try {
-    const xaiResponse = await fetch('https://api.x.ai/v1/chat/completions', {
+    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+        'Authorization': Bearer ${API_KEY}
       },
       body: JSON.stringify({
-        model: 'grok-4.3',
-        messages: [
-          { role: 'system', content: system },
-          { role: 'user', content: user }
-        ],
+        model: 'llama-3.3-70b-versatile',
+        messages: [{ role: 'user', content: prompt }],
         temperature: 0.7,
-        max_tokens: 1500
+        max_tokens: 2048
       })
     });
 
-    if (!xaiResponse.ok) {
-      const errText = await xaiResponse.text();
-      console.error('xAI API error', xaiResponse.status, errText);
-      return jsonResponse(xaiResponse.status, { error: `xAI API error (${xaiResponse.status}): ${errText.slice(0, 500)}` });
-    }
-
-    const data = await xaiResponse.json();
+    const data = await groqRes.json();
     const content = data?.choices?.[0]?.message?.content;
     if (!content) {
       return jsonResponse(502, { error: 'Grok returned no content' });
