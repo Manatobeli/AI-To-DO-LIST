@@ -519,7 +519,8 @@ Respond with ONLY this exact JSON shape, nothing else:
     }catch(err){
       state.loading = false;
       renderAll();
-      showError("Couldn't generate this week's plan. Check your connection and try again.", ()=>generateWeek(weekNumber));
+      const reason = (err && err.message) ? err.message : 'Unknown error.';
+      showError(`Couldn't generate this week's plan — ${reason}`, ()=>generateWeek(weekNumber));
       return;
     }
     state.loading = false;
