@@ -462,7 +462,7 @@
 
   // ---------- Grok calls (via Netlify Function, keeps the API key server-side) ----------
   async function callGrok(systemPrompt, userPrompt){
-    const response = await fetch("/api/generate-plan", {
+    const response = await fetch("/.netlify/functions/generate-plan", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ system: systemPrompt, user: userPrompt })
